@@ -12,7 +12,21 @@ function initFirebase(): Firestore {
     throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON 환경변수가 설정되지 않았습니다.");
   }
 
-  const serviceAccount = JSON.parse(serviceAccountJson);
+  let serviceAccount: Record<string, unknown>;
+  try {
+    const trimmed = serviceAccountJson.trim();
+    serviceAccount = JSON.parse(trimmed) as Record<string, unknown>;
+  } catch {
+    throw new Error(
+      "FIREBASE_SERVICE_ACCOUNT_JSON 형식이 올바르지 않습니다. Firebase 서비스 계정 JSON 파일 내용 전체를 한 줄로 붙여넣으세요. (프로젝트 ID만 넣으면 안 됩니다.)"
+    );
+  }
+
+  if (!serviceAccount.project_id || !serviceAccount.private_key || !serviceAccount.client_email) {
+    throw new Error(
+      "FIREBASE_SERVICE_ACCOUNT_JSON에 project_id, private_key, client_email이 필요합니다."
+    );
+  }
 
   if (!getApps().length) {
     app = initializeApp({

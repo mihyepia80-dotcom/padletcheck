@@ -13,7 +13,8 @@
     "jose": "^6.0.11",
     "next": "^15.3.3",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "source-map-js": "^1.2.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",

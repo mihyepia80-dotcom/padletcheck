@@ -45,10 +45,20 @@ interface PadletBoardResponse {
 function getApiKey(index: 1 | 2): string {
   const key =
     index === 1 ? process.env.PADLET_API_KEY_1 : process.env.PADLET_API_KEY_2;
-  if (!key) {
-    throw new Error(`PADLET_API_KEY_${index} 환경변수가 설정되지 않았습니다.`);
+  const trimmed = key?.trim();
+  if (!trimmed) {
+    throw new Error(
+      `PADLET_API_KEY_${index} 환경변수가 설정되지 않았습니다. Vercel Settings → Environment Variables를 확인하세요.`
+    );
   }
-  return key;
+  return trimmed;
+}
+
+export function getPadletKeyStatus(): { account1: boolean; account2: boolean } {
+  return {
+    account1: Boolean(process.env.PADLET_API_KEY_1?.trim()),
+    account2: Boolean(process.env.PADLET_API_KEY_2?.trim()),
+  };
 }
 
 export async function fetchUserBoards(

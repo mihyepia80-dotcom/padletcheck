@@ -21,9 +21,12 @@ interface PadletAccountError {
 }
 
 function formatPadletErrors(errors: PadletAccountError[]): string {
-  return errors
-    .map((e) => `계정 ${e.apiKeyIndex}: ${e.error}`)
-    .join("\n");
+  return errors.map((e) => `계정 ${e.apiKeyIndex}: ${e.error}`).join("\n");
+}
+
+function formatKeyStatus(keyStatus?: { account1: boolean; account2: boolean }): string {
+  if (!keyStatus) return "";
+  return `API 키 설정 — 계정1: ${keyStatus.account1 ? "있음" : "없음"}, 계정2: ${keyStatus.account2 ? "있음" : "없음"}`;
 }
 
 export default function BoardsPage() {
@@ -84,10 +87,13 @@ export default function BoardsPage() {
 
       const errPart =
         data.errors?.length > 0 ? ` (${data.errors.length}개 계정 오류)` : "";
+      const keyPart = data.keyStatus ? ` · ${formatKeyStatus(data.keyStatus)}` : "";
       setMessage(
-        `Padlet 보드 ${data.availableCount}개 가져올 수 있음, ${data.alreadyRegisteredCount}개 이미 등록됨${errPart}`
+        `Padlet 보드 ${data.availableCount}개 가져올 수 있음, ${data.alreadyRegisteredCount}개 이미 등록됨${errPart}${keyPart}`
       );
-      if (data.errors?.length) setErrorDetails(formatPadletErrors(data.errors));
+      if (data.errors?.length) {
+        setErrorDetails(formatPadletErrors(data.errors));
+      }
     } else {
       setMessage(data.error ?? "목록 조회 실패");
     }
@@ -139,10 +145,13 @@ export default function BoardsPage() {
     if (res.ok) {
       const errPart =
         data.errors?.length > 0 ? ` (${data.errors.length}개 계정 오류)` : "";
+      const keyPart = data.keyStatus ? ` · ${formatKeyStatus(data.keyStatus)}` : "";
       setMessage(
-        `Padlet에서 ${data.addedCount}개 보드 추가, ${data.skippedCount}개 이미 등록됨${errPart}`
+        `Padlet에서 ${data.addedCount}개 보드 추가, ${data.skippedCount}개 이미 등록됨${errPart}${keyPart}`
       );
-      if (data.errors?.length) setErrorDetails(formatPadletErrors(data.errors));
+      if (data.errors?.length) {
+        setErrorDetails(formatPadletErrors(data.errors));
+      }
       setShowImportPreview(false);
       await loadBoards();
     } else {

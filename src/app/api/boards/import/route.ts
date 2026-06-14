@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
 import { getBoards, addBoard } from "@/lib/firebase";
-import { fetchUserBoards } from "@/lib/padlet";
+import { fetchUserBoards, getPadletKeyStatus } from "@/lib/padlet";
 
 function resolveAccounts(importAll: boolean, account?: 1 | 2): (1 | 2)[] {
   if (importAll) return [1, 2];
@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
       available,
       alreadyRegistered,
       errors,
+      keyStatus: getPadletKeyStatus(),
       availableCount: available.length,
       alreadyRegisteredCount: alreadyRegistered.length,
     });
@@ -174,6 +175,7 @@ export async function POST(request: NextRequest) {
       added,
       skipped,
       errors,
+      keyStatus: getPadletKeyStatus(),
       addedCount: added.length,
       skippedCount: skipped.length,
     });

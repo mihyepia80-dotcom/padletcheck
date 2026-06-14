@@ -24,8 +24,15 @@ interface Submission {
   attachmentUrl: string | null;
 }
 
+interface ClassGroup {
+  id: string;
+  name: string;
+  students: Student[];
+}
+
 interface CheckResult {
   board: Board;
+  classId?: string;
   syncedAt: string | null;
   submitted: (Student & { submission: Submission })[];
   missing: Student[];
@@ -36,7 +43,9 @@ interface CheckResult {
 
 export default function CheckPage() {
   const [boards, setBoards] = useState<Board[]>([]);
+  const [classes, setClasses] = useState<ClassGroup[]>([]);
   const [selectedBoardId, setSelectedBoardId] = useState("");
+  const [selectedClassId, setSelectedClassId] = useState("");
   const [result, setResult] = useState<CheckResult | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncAll, setSyncAll] = useState(false);
@@ -45,25 +54,35 @@ export default function CheckPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    fetch("/api/boards")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.boards?.length) {
-          setBoards(data.boards);
-          setSelectedBoardId(data.boards[0].id);
+    Promise.all([fetch("/api/boards"), fetch("/api/classes")]).then(
+      async ([boardsRes, classesRes]) => {
+        const boardsData = await boardsRes.json();
+        const classesData = await classesRes.json();
+
+        if (boardsData.boards?.length) {
+          setBoards(boardsData.boards);
+          setSelectedBoardId(boardsData.boards[0].id);
         }
-      });
+        if (classesData.classes?.length) {
+          setClasses(classesData.classes);
+          setSelectedClassId(classesData.classes[0].id);
+        }
+      }
+    );
   }, []);
 
-  const loadResult = useCallback(async (boardId: string) => {
-    const res = await fetch(`/api/sync?boardId=${boardId}`);
+  const loadResult = useCallback(async (boardId: string, classId: string) => {
+    if (!classId) return;
+    const res = await fetch(`/api/sync?boardId=${boardId}&classId=${classId}`);
     const data = await res.json();
     if (res.ok) setResult(data);
   }, []);
 
   useEffect(() => {
-    if (selectedBoardId) loadResult(selectedBoardId);
-  }, [selectedBoardId, loadResult]);
+    if (selectedBoardId && selectedClassId) {
+      loadResult(selectedBoardId, selectedClassId);
+    }
+  }, [selectedBoardId, selectedClassId, loadResult]);
 
   async function handleSync(all = false) {
     setSyncing(true);
@@ -84,7 +103,9 @@ export default function CheckPage() {
         `동기화 완료: ${successCount}개 성공` +
         (errorCount > 0 ? `, ${errorCount}개 실패` : "")
       );
-      if (!all && selectedBoardId) await loadResult(selectedBoardId);
+      if (!all && selectedBoardId && selectedClassId) {
+        await loadResult(selectedBoardId, selectedClassId);
+      }
     } else {
       setMessage(data.error ?? "동기화 실패");
     }
@@ -147,8 +168,23 @@ export default function CheckPage() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">
           등록된 보드가 없습니다. <a href="/boards" className="underline">보드 관리</a>에서 Padlet 보드를 추가하세요.
         </div>
+      ) : classes.length === 0 ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm text-amber-800">
+          등록된 반이 없습니다. <a href="/students" className="underline">학생 명단</a>에서 반을 먼저 만드세요.
+        </div>
       ) : (
         <div className="flex flex-wrap gap-3 items-center">
+          <select
+            value={selectedClassId}
+            onChange={(e) => setSelectedClassId(e.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none min-w-[140px]"
+          >
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.students.length}명)
+              </option>
+            ))}
+          </select>
           <select
             value={selectedBoardId}
             onChange={(e) => setSelectedBoardId(e.target.value)}
@@ -177,9 +213,9 @@ export default function CheckPage() {
         </p>
       )}
 
-      {result && result.totalStudents === 0 && (
+      {result && result.totalStudents === 0 && classes.length > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          학생 명단이 비어 있습니다. <a href="/students" className="underline">학생 명단</a>을 먼저 등록하세요.
+          선택한 반의 학생 명단이 비어 있습니다. <a href="/students" className="underline">학생 명단</a>에서 등록하세요.
         </div>
       )}
 

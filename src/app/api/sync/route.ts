@@ -77,8 +77,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "boardId가 필요합니다." }, { status: 400 });
     }
 
+    const classId = request.nextUrl.searchParams.get("classId");
+    if (!classId) {
+      return NextResponse.json({ error: "classId가 필요합니다." }, { status: 400 });
+    }
+
     const [students, syncResult, boards] = await Promise.all([
-      getStudents(),
+      getStudents(classId),
       getSyncResult(boardId),
       getBoards(),
     ]);
@@ -94,6 +99,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       board,
+      classId,
       syncedAt: syncResult?.syncedAt ?? null,
       students,
       submitted: submitted.map((s) => ({

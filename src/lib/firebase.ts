@@ -58,6 +58,13 @@ export interface Student {
   name: string;
 }
 
+export interface ClassGroup {
+  id: string;
+  name: string;
+  students: Student[];
+  createdAt: string;
+}
+
 export interface SubmissionRecord {
   postId: string;
   subject: string;
@@ -67,6 +74,7 @@ export interface SubmissionRecord {
 }
 
 const BOARDS_COLLECTION = "boards";
+const CLASSES_COLLECTION = "classes";
 const SETTINGS_DOC = "settings/main";
 
 export async function getBoards(): Promise<Board[]> {
@@ -110,16 +118,76 @@ export async function deleteAllBoards(apiKeyIndex?: 1 | 2): Promise<number> {
   return deleteBoards(targets.map((b) => b.id));
 }
 
-export async function getStudents(): Promise<Student[]> {
-  const doc = await getDb().doc(SETTINGS_DOC).get();
-  if (!doc.exists) return [];
-  return (doc.data()?.students as Student[]) ?? [];
+export async function getClasses(): Promise<ClassGroup[]> {
+  const snapshot = await getDb()
+    .collection(CLASSES_COLLECTION)
+    .orderBy("name")
+    .get();
+
+  if (!snapshot.empty) {
+    return snapshot.docs.map((doc) => doc.data() as ClassGroup);
+  }
+
+  const legacy = await getDb().doc(SETTINGS_DOC).get();
+  const legacyStudents = (legacy.data()?.students as Student[]) ?? [];
+  if (legacyStudents.length > 0) {
+    const defaultClass = await createClass("기본 반", legacyStudents);
+    return [defaultClass];
+  }
+
+  return [];
 }
 
-export async function saveStudents(students: Student[]): Promise<void> {
-  await getDb().doc(SETTINGS_DOC).set({ students }, { merge: true });
+export async function getClassById(id: string): Promise<ClassGroup | null> {
+  const doc = await getDb().collection(CLASSES_COLLECTION).doc(id).get();
+  if (!doc.exists) return null;
+  return doc.data() as ClassGroup;
 }
 
+export async function createClass(
+  name: string,
+  students: Student[] = []
+): Promise<ClassGroup> {
+  const id = crypto.randomUUID();
+  const classGroup: ClassGroup = {
+    id,
+    name: name.trim(),
+    students,
+    createdAt: new Date().toISOString(),
+  };
+  await getDb().collection(CLASSES_COLLECTION).doc(id).set(classGroup);
+  return classGroup;
+}
+
+export async function updateClassName(id: string, name: string): Promise<ClassGroup> {
+  const existing = await getClassById(id);
+  if (!existing) throw new Error("반을 찾을 수 없습니다.");
+
+  const updated: ClassGroup = { ...existing, name: name.trim() };
+  await getDb().collection(CLASSES_COLLECTION).doc(id).set(updated);
+  return updated;
+}
+
+export async function saveClassStudents(
+  id: string,
+  students: Student[]
+): Promise<ClassGroup> {
+  const existing = await getClassById(id);
+  if (!existing) throw new Error("반을 찾을 수 없습니다.");
+
+  const updated: ClassGroup = { ...existing, students };
+  await getDb().collection(CLASSES_COLLECTION).doc(id).set(updated);
+  return updated;
+}
+
+export async function deleteClass(id: string): Promise<void> {
+  await getDb().collection(CLASSES_COLLECTION).doc(id).delete();
+}
+
+export async function getStudents(classId: string): Promise<Student[]> {
+  const classGroup = await getClassById(classId);
+  return classGroup?.students ?? [];
+}
 const SYNC_COLLECTION = "sync_results";
 
 export async function saveSyncResult(

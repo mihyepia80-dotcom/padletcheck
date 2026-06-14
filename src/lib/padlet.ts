@@ -3,6 +3,11 @@ import type { SubmissionRecord } from "./firebase";
 
 const PADLET_API_BASE = "https://api.padlet.dev/v1";
 
+const PADLET_HEADERS = (apiKey: string): HeadersInit => ({
+  "X-API-KEY": apiKey,
+  Accept: "application/vnd.api+json",
+});
+
 interface PadletPost {
   id: string;
   type: string;
@@ -53,10 +58,7 @@ export async function fetchUserBoards(
   const url = `${PADLET_API_BASE}/me?include=boards`;
 
   const response = await fetch(url, {
-    headers: {
-      "X-API-KEY": apiKey,
-      Accept: "application/json",
-    },
+    headers: PADLET_HEADERS(apiKey),
     next: { revalidate: 0 },
   });
 
@@ -85,10 +87,7 @@ export async function fetchBoardPosts(
   const url = `${PADLET_API_BASE}/boards/${padletBoardId}?include=posts`;
 
   const response = await fetch(url, {
-    headers: {
-      "X-API-KEY": apiKey,
-      Accept: "application/json",
-    },
+    headers: PADLET_HEADERS(apiKey),
     next: { revalidate: 0 },
   });
 

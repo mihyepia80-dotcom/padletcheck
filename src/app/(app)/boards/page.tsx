@@ -15,6 +15,17 @@ interface PadletBoardPreview {
   apiKeyIndex: 1 | 2;
 }
 
+interface PadletAccountError {
+  apiKeyIndex: number;
+  error: string;
+}
+
+function formatPadletErrors(errors: PadletAccountError[]): string {
+  return errors
+    .map((e) => `계정 ${e.apiKeyIndex}: ${e.error}`)
+    .join("\n");
+}
+
 export default function BoardsPage() {
   const [boards, setBoards] = useState<Board[]>([]);
   const [selectedBoardIds, setSelectedBoardIds] = useState<Set<string>>(new Set());
@@ -32,6 +43,7 @@ export default function BoardsPage() {
   const [deleting, setDeleting] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
   const [showImportPreview, setShowImportPreview] = useState(false);
+  const [errorDetails, setErrorDetails] = useState("");
 
   function importKey(item: PadletBoardPreview) {
     return `${item.apiKeyIndex}:${item.padletBoardId}`;
@@ -53,6 +65,7 @@ export default function BoardsPage() {
   async function handleFetchPreview(importAll: boolean, account?: 1 | 2) {
     setImporting(true);
     setMessage("");
+    setErrorDetails("");
     setShowImportPreview(false);
 
     const params = importAll
@@ -74,6 +87,7 @@ export default function BoardsPage() {
       setMessage(
         `Padlet 보드 ${data.availableCount}개 가져올 수 있음, ${data.alreadyRegisteredCount}개 이미 등록됨${errPart}`
       );
+      if (data.errors?.length) setErrorDetails(formatPadletErrors(data.errors));
     } else {
       setMessage(data.error ?? "목록 조회 실패");
     }
@@ -128,6 +142,7 @@ export default function BoardsPage() {
       setMessage(
         `Padlet에서 ${data.addedCount}개 보드 추가, ${data.skippedCount}개 이미 등록됨${errPart}`
       );
+      if (data.errors?.length) setErrorDetails(formatPadletErrors(data.errors));
       setShowImportPreview(false);
       await loadBoards();
     } else {
@@ -469,9 +484,21 @@ export default function BoardsPage() {
       </div>
 
       {message && (
-        <p className={`text-sm ${message.includes("실패") ? "text-red-600" : "text-green-600"}`}>
+        <p
+          className={`text-sm ${
+            message.includes("실패") || (errorDetails && message.includes("0개"))
+              ? "text-red-600"
+              : "text-green-600"
+          }`}
+        >
           {message}
         </p>
+      )}
+
+      {errorDetails && (
+        <pre className="whitespace-pre-wrap rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+          {errorDetails}
+        </pre>
       )}
 
       {/* 등록된 보드 + 삭제 */}

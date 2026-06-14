@@ -16,6 +16,23 @@ interface PadletPost {
   };
 }
 
+export interface PadletBoardSummary {
+  id: string;
+  title: string;
+}
+
+interface PadletBoardItem {
+  id: string;
+  type: string;
+  attributes?: {
+    title?: string;
+  };
+}
+
+interface PadletMeResponse {
+  included?: PadletBoardItem[];
+}
+
 interface PadletBoardResponse {
   included?: PadletPost[];
 }
@@ -27,6 +44,37 @@ function getApiKey(index: 1 | 2): string {
     throw new Error(`PADLET_API_KEY_${index} 환경변수가 설정되지 않았습니다.`);
   }
   return key;
+}
+
+export async function fetchUserBoards(
+  apiKeyIndex: 1 | 2
+): Promise<PadletBoardSummary[]> {
+  const apiKey = getApiKey(apiKeyIndex);
+  const url = `${PADLET_API_BASE}/me?include=boards`;
+
+  const response = await fetch(url, {
+    headers: {
+      "X-API-KEY": apiKey,
+      Accept: "application/json",
+    },
+    next: { revalidate: 0 },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Padlet API 오류 (${response.status}): ${text.slice(0, 200)}`
+    );
+  }
+
+  const data = (await response.json()) as PadletMeResponse;
+  return (data.included ?? [])
+    .filter((item) => item.type === "board")
+    .map((board) => ({
+      id: board.id,
+      title: board.attributes?.title?.trim() || "(제목 없음)",
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title, "ko"));
 }
 
 export async function fetchBoardPosts(

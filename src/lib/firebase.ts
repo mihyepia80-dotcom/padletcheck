@@ -72,6 +72,27 @@ export async function addBoard(board: Omit<Board, "id" | "createdAt">): Promise<
 
 export async function deleteBoard(id: string): Promise<void> {
   await getDb().collection(BOARDS_COLLECTION).doc(id).delete();
+  await getDb().collection(SYNC_COLLECTION).doc(id).delete();
+}
+
+export async function deleteBoards(ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const batch = getDb().batch();
+  for (const id of ids) {
+    batch.delete(getDb().collection(BOARDS_COLLECTION).doc(id));
+    batch.delete(getDb().collection(SYNC_COLLECTION).doc(id));
+  }
+  await batch.commit();
+  return ids.length;
+}
+
+export async function deleteAllBoards(apiKeyIndex?: 1 | 2): Promise<number> {
+  const boards = await getBoards();
+  const targets =
+    apiKeyIndex === 1 || apiKeyIndex === 2
+      ? boards.filter((b) => b.apiKeyIndex === apiKeyIndex)
+      : boards;
+  return deleteBoards(targets.map((b) => b.id));
 }
 
 export async function getStudents(): Promise<Student[]> {

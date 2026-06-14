@@ -24,6 +24,7 @@ interface PadletPost {
 export interface PadletBoardSummary {
   id: string;
   title: string;
+  createdAt: string | null;
 }
 
 interface PadletBoardItem {
@@ -31,6 +32,7 @@ interface PadletBoardItem {
   type: string;
   attributes?: {
     title?: string;
+    createdAt?: string;
   };
 }
 
@@ -80,13 +82,19 @@ export async function fetchUserBoards(
   }
 
   const data = (await response.json()) as PadletMeResponse;
-  return (data.included ?? [])
+  const boards = (data.included ?? [])
     .filter((item) => item.type === "board")
     .map((board) => ({
       id: board.id,
       title: board.attributes?.title?.trim() || "(제목 없음)",
-    }))
-    .sort((a, b) => a.title.localeCompare(b.title, "ko"));
+      createdAt: board.attributes?.createdAt ?? null,
+    }));
+
+  return boards.sort((a, b) => {
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bTime - aTime;
+  });
 }
 
 export async function fetchBoardPosts(

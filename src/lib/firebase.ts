@@ -50,6 +50,7 @@ export interface Board {
   padletBoardId: string;
   apiKeyIndex: 1 | 2;
   createdAt: string;
+  padletCreatedAt?: string | null;
 }
 
 export interface Student {

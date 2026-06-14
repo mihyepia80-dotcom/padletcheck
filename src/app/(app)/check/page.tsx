@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { formatPadletDate } from "@/lib/format-date";
 
 interface Board {
   id: string;
   name: string;
   padletBoardId: string;
   apiKeyIndex: 1 | 2;
+  padletCreatedAt?: string | null;
 }
 
 interface Student {
@@ -154,7 +156,9 @@ export default function CheckPage() {
           >
             {boards.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.name} (계정{b.apiKeyIndex})
+                {b.name}
+                {b.padletCreatedAt ? ` (${formatPadletDate(b.padletCreatedAt)})` : ""}
+                {" "}(계정{b.apiKeyIndex})
               </option>
             ))}
           </select>

@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatPadletDate } from "@/lib/format-date";
 
 interface Board {
   id: string;
   name: string;
   padletBoardId: string;
   apiKeyIndex: 1 | 2;
+  padletCreatedAt?: string | null;
 }
 
 interface PadletBoardPreview {
   padletBoardId: string;
   name: string;
   apiKeyIndex: 1 | 2;
+  padletCreatedAt?: string | null;
 }
 
 interface PadletAccountError {
@@ -56,7 +59,12 @@ export default function BoardsPage() {
     const res = await fetch("/api/boards");
     const data = await res.json();
     if (res.ok) {
-      setBoards(data.boards);
+      const sorted = [...data.boards].sort((a: Board, b: Board) => {
+        const aTime = a.padletCreatedAt ? new Date(a.padletCreatedAt).getTime() : 0;
+        const bTime = b.padletCreatedAt ? new Date(b.padletCreatedAt).getTime() : 0;
+        return bTime - aTime;
+      });
+      setBoards(sorted);
       setSelectedBoardIds(new Set());
     }
   }
@@ -388,6 +396,7 @@ export default function BoardsPage() {
                     <tr>
                       <th className="w-10 px-3 py-2"></th>
                       <th className="px-3 py-2 font-medium">보드 이름</th>
+                      <th className="px-3 py-2 font-medium">생성일</th>
                       <th className="px-3 py-2 font-medium">Padlet ID</th>
                       <th className="px-3 py-2 font-medium">계정</th>
                     </tr>
@@ -405,6 +414,9 @@ export default function BoardsPage() {
                             />
                           </td>
                           <td className="px-3 py-2 font-medium">{board.name}</td>
+                          <td className="px-3 py-2 text-xs text-slate-500 whitespace-nowrap">
+                            {formatPadletDate(board.padletCreatedAt)}
+                          </td>
                           <td className="px-3 py-2 font-mono text-xs text-slate-500">
                             {board.padletBoardId}
                           </td>
@@ -562,6 +574,7 @@ export default function BoardsPage() {
               <tr>
                 <th className="w-10 px-4 py-3"></th>
                 <th className="px-4 py-3 font-medium">보드 이름</th>
+                <th className="px-4 py-3 font-medium">Padlet 생성일</th>
                 <th className="px-4 py-3 font-medium">Padlet ID</th>
                 <th className="px-4 py-3 font-medium">계정</th>
                 <th className="px-4 py-3 font-medium w-16"></th>
@@ -578,6 +591,9 @@ export default function BoardsPage() {
                     />
                   </td>
                   <td className="px-4 py-3 font-medium">{board.name}</td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                    {formatPadletDate(board.padletCreatedAt)}
+                  </td>
                   <td className="px-4 py-3 font-mono text-slate-500">{board.padletBoardId}</td>
                   <td className="px-4 py-3">
                     <span

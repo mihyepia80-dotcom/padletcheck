@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
             padletBoardId: padletBoard.id,
             name: padletBoard.title,
             apiKeyIndex,
+            padletCreatedAt: padletBoard.createdAt,
           };
           const key = `${apiKeyIndex}:${padletBoard.id}`;
           if (existingKeys.has(key)) {
@@ -107,7 +108,15 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        const board = await addBoard({ name, padletBoardId, apiKeyIndex });
+        const padletCreatedAt =
+          typeof item.padletCreatedAt === "string" ? item.padletCreatedAt : null;
+
+        const board = await addBoard({
+          name,
+          padletBoardId,
+          apiKeyIndex,
+          padletCreatedAt,
+        });
         existingKeys.add(key);
         added.push(board);
       }
@@ -151,6 +160,7 @@ export async function POST(request: NextRequest) {
               name: padletBoard.title,
               padletBoardId: padletBoard.id,
               apiKeyIndex,
+              padletCreatedAt: padletBoard.createdAt,
             });
             continue;
           }
@@ -159,6 +169,7 @@ export async function POST(request: NextRequest) {
             name: padletBoard.title,
             padletBoardId: padletBoard.id,
             apiKeyIndex,
+            padletCreatedAt: padletBoard.createdAt,
           });
           existingKeys.add(key);
           added.push(board);
